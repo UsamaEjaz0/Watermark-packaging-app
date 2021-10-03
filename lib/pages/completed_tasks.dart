@@ -1,0 +1,114 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:watermark/dialogs/add_order.dart';
+import 'package:watermark/dialogs/view_order.dart';
+import 'package:watermark/models/order.dart';
+import 'package:watermark/utils/app_config.dart';
+import 'package:watermark/widgets/custom_list_item.dart';
+
+class CompletedTasks extends StatefulWidget {
+  @override
+  _CompletedTasksState createState() => _CompletedTasksState();
+}
+
+class _CompletedTasksState extends State<CompletedTasks> {
+  final key = GlobalKey<AnimatedListState>();
+
+  CollectionReference ref = FirebaseFirestore.instance.collection('orders');
+
+  @override
+  Widget build(BuildContext ctxt) {
+    SizeConfig().init(ctxt);
+    return Container(
+      alignment: Alignment.center,
+      child: Column(children: [
+        StreamBuilder(
+            stream: ref.snapshots(),
+            builder: (_, AsyncSnapshot<QuerySnapshot> snapshot) {
+              return Expanded(
+                  child: snapshot.hasData
+                      ? ListView.builder(
+                    key: key,
+                    itemCount: snapshot.data.docs.length,
+                    itemBuilder: (context, index) {
+
+                      Map<String, dynamic> doc = snapshot.data.docs[index].data();
+                      if (doc['status'] == "complete"){
+                        return buildItem(
+                            new Order(
+                                doc['clientName'],
+                                doc["orderDate"],
+                                doc["jobTitle"],
+                                doc["jobNature"],
+                                doc["orderQuantity"],
+                                doc["size"],
+                                doc['status']
+                            ),
+                            index, snapshot.data.docs[index].reference);
+
+                      }else{
+                        return SizedBox(height: 0,);
+                      }
+
+
+                    },
+                  )
+                      : Center(child: Text("No data found")));
+            }),
+      ]),
+    );
+  }
+
+  // @override
+  // void didUpdateWidget(DataEntry oldWidget) {
+  //   rebuildAllChildren(context);
+  //   print("Updated");
+  // }
+
+  Widget buildItem(Order item, int index, DocumentReference docRef) {
+    return ListItemWidget(
+      item: item,
+      // onIconClicked: () => null,
+      onItemClicked: (item) {
+        showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return ViewOrder(order: item, docRef: docRef,);
+            });
+      },
+    );
+  }
+
+  void rebuildAllChildren(BuildContext context) {
+    void rebuild(Element el) {
+      el.markNeedsBuild();
+      el.visitChildren(rebuild);
+    }
+
+    (context as Element).visitChildren(rebuild);
+  }
+// void editItem(int index, Order item) {
+//   removeItem(index);
+//   items.insert(0, item);
+//   key.currentState.insertItem(0);
+// }
+//
+// void insertItem(Order item) {
+//   items.insert(0, item);
+//   key.currentState.insertItem(0);
+//   optionCount++;
+// }
+//
+// void removeItem(int index) {
+//   final item = items.removeAt(index);
+//
+//   key.currentState.removeItem(
+//     index,
+//     (context, animation) => buildItem(item, index, animation),
+//   );
+//   if (items.length == 0) {
+//     setState(() {});
+//     optionCount = 1;
+//   }
+// }
+}
